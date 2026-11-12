@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="{{BASE}}">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{DESC}}">
+<meta name="robots" content="{{ROBOTS}}">
+<link rel="canonical" href="{{URL}}">
+<meta name="theme-color" content="#FAF8F5">
+<link rel="icon" href="assets/logo.jpg">
+<link rel="apple-touch-icon" href="assets/logo.jpg">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{SITE_NAME}}">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="{{TITLE}}">
+<meta property="og:description" content="{{DESC}}">
+<meta property="og:url" content="{{URL}}">
+<meta property="og:image" content="{{IMAGE}}">
+<meta property="og:image:alt" content="{{IMAGE_ALT}}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{TITLE}}">
+<meta name="twitter:description" content="{{DESC}}">
+<meta name="twitter:image" content="{{IMAGE}}">
+<script type="application/ld+json">{{SITE_LD}}</script>
+{{PAGE_LD}}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="js/theme.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script defer src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script defer src="js/config.js"></script>
+<script defer src="js/data.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+</head>
+<body>
+<div id="root">
+<div class="ssr">
+<header class="ssr-head"><a href="./" class="ssr-brand"><img src="assets/logo.jpg" alt="{{SITE_NAME}} logo" width="48" height="48"> {{SITE_NAME}}</a>
+<nav aria-label="Main"><a href="dogs/">Dogs Needing Help</a> <a href="how-it-works/">How It Works</a> <a href="list-a-dog/">List a Dog</a> <a href="support/">Support</a> <a href="about/">About &amp; Contact</a> <a href="help/">I Can Help</a></nav></header>
+<main>
+{{BODY}}
+</main>
+<footer class="ssr-foot"><p>{{SITE_NAME}} connects dogs who need a foster or a home with people who can help. Every dog links back to the rescue or shelter caring for them.</p></footer>
+</div>
+</div>
+<script type="text/babel" data-presets="react" src="js/ui.jsx"></script>
+<script type="text/babel" data-presets="react" src="js/site.jsx"></script>
+</body>
+</html>

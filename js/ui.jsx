@@ -67,7 +67,7 @@ function Logo({ settings, size = 40, className = "" }) {
 }
 
 const STATUS_STYLE = { Available: "bg-sage text-white", Pending: "bg-sand text-ink", Adopted: "bg-[#A39C94] text-white" };
-const STATUS_LABEL = { Available: "Available", Pending: "Application Pending", Adopted: "Adopted" };
+const STATUS_LABEL = { Available: "Needs help", Pending: "Help on the way", Adopted: "Safe!" };
 function StatusPill({ status, className = "" }) {
   return <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold border border-white/50 ${STATUS_STYLE[status] || STATUS_STYLE.Available} ${className}`}>{STATUS_LABEL[status] || status}</span>;
 }

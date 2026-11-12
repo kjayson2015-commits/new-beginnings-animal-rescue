@@ -9,3 +9,17 @@ body { margin: 0; background: #FAF8F5; color: #2B2927; font-family: "Plus Jakart
 input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible { outline: 2px solid #E07A5F; outline-offset: 2px; }
 .boot { display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center; min-height: 100vh; color: #5C5854; font-family: system-ui, sans-serif; }
 .boot img { border-radius: 9999px; object-fit: cover; }
+/* Server-rendered fallback content (shown before the app loads, and to search engines) */
+.ssr { max-width: 72rem; margin: 0 auto; padding: 1.25rem; line-height: 1.6; }
+.ssr a { color: #B4513A; font-weight: 600; }
+.ssr-head { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+.ssr-head nav { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; font-size: .95rem; }
+.ssr-brand { display: flex; align-items: center; gap: .75rem; color: #2B2927 !important; font-weight: 800; font-size: 1.15rem; text-decoration: none; }
+.ssr-brand img { border-radius: 9999px; object-fit: cover; }
+.ssr h1 { font-size: 2.25rem; font-weight: 800; line-height: 1.15; margin: 0 0 1rem; }
+.ssr h2 { font-size: 1.4rem; font-weight: 800; margin: 2rem 0 .75rem; }
+.ssr h3 { font-size: 1.1rem; font-weight: 700; margin: 1.25rem 0 .25rem; }
+.ssr p, .ssr li { color: #5C5854; max-width: 48rem; }
+.ssr ul, .ssr ol { padding-left: 1.25rem; display: grid; gap: .4rem; }
+.ssr ul { list-style: disc; } .ssr ol { list-style: decimal; }
+.ssr-foot { margin-top: 3rem; font-size: .9rem; }

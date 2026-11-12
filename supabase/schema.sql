@@ -72,6 +72,16 @@ create table if not exists public.dogs (
   updated_at    timestamptz not null default now()
 );
 
+-- Listing details (dogs shared from rescues & shelters)
+alter table public.dogs add column if not exists need        text default 'Foster';
+alter table public.dogs add column if not exists location    text default '';
+alter table public.dogs add column if not exists shelter_id  text default '';
+alter table public.dogs add column if not exists deadline    text default '';
+alter table public.dogs add column if not exists source_name text default '';
+alter table public.dogs add column if not exists source_url  text default '';
+alter table public.dogs add column if not exists contact     text default '';
+alter table public.dogs add column if not exists posted_on   date;
+
 -- ---------- Applications & messages ----------
 create table if not exists public.applications (
   id         uuid primary key default gen_random_uuid(),

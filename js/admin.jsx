@@ -5,7 +5,7 @@ const DEMO = window.NB.mode === "demo";
 const SECTIONS = [
   { id: "dashboard", label: "Dashboard", icon: "LayoutDashboard" },
   { id: "dogs", label: "Dogs", icon: "Dog" },
-  { id: "applications", label: "Applications", icon: "ClipboardList" },
+  { id: "applications", label: "Offers to help", icon: "HandHeart" },
   { id: "messages", label: "Messages", icon: "Inbox" },
   { id: "tails", label: "Happy Tails", icon: "Smile" },
   { id: "settings", label: "Site Settings", icon: "Settings" },
@@ -156,12 +156,12 @@ function Dashboard({ go, toast }) {
     { label: "Available dogs", value: c(d.dogs, x => x.status === "Available"), icon: "Dog", go: "dogs", tone: "bg-sage" },
     { label: "Pending adoptions", value: c(d.dogs, x => x.status === "Pending"), icon: "Clock", go: "dogs", tone: "bg-sand" },
     { label: "Adopted", value: c(d.dogs, x => x.status === "Adopted"), icon: "PartyPopper", go: "dogs", tone: "bg-[#A39C94]" },
-    { label: "New applications", value: c(d.apps, x => x.status === "New"), icon: "ClipboardList", go: "applications", tone: "bg-terra" },
+    { label: "New offers to help", value: c(d.apps, x => x.status === "New"), icon: "ClipboardList", go: "applications", tone: "bg-terra" },
     { label: "New messages", value: c(d.msgs, x => x.status === "New"), icon: "Inbox", go: "messages", tone: "bg-terra" },
   ];
   return (
     <div className="fade-in">
-      <PageHead title="Welcome back" subtitle="Here's what's happening at the rescue." actions={<><Button onClick={() => go("dogs", { add: true })}><Icon name="Plus" size={18} /> Add a dog</Button><a href="index.html" target="_blank" rel="noopener" className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-bold glass min-h-[44px]"><Icon name="ExternalLink" size={16} /> View website</a></>} />
+      <PageHead title="Welcome back" subtitle="Here's what's happening at the rescue." actions={<><Button variant="glass" onClick={() => go("dogs", { import: true })}><Icon name="Facebook" size={18} /> Import from Facebook</Button><Button onClick={() => go("dogs", { add: true })}><Icon name="Plus" size={18} /> Add a dog</Button><a href="./" target="_blank" rel="noopener" className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-bold glass min-h-[44px]"><Icon name="ExternalLink" size={16} /> View website</a></>} />
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {stats.map(s => (
           <button key={s.label} onClick={() => go(s.go)} className="glass rounded-3xl p-5 text-left hover:-translate-y-0.5 transition">
@@ -172,8 +172,8 @@ function Dashboard({ go, toast }) {
       </div>
       <div className="grid lg:grid-cols-2 gap-5">
         <Card>
-          <div className="flex items-center justify-between mb-4"><h2 className="font-extrabold text-lg">Latest applications</h2><button onClick={() => go("applications")} className="text-sm font-bold text-terraText">See all</button></div>
-          {d.apps.length === 0 ? <p className="text-muted">No applications yet. They'll appear here as soon as someone applies.</p> :
+          <div className="flex items-center justify-between mb-4"><h2 className="font-extrabold text-lg">Latest offers to help</h2><button onClick={() => go("applications")} className="text-sm font-bold text-terraText">See all</button></div>
+          {d.apps.length === 0 ? <p className="text-muted">No offers yet. They'll appear here as soon as someone says "I can help".</p> :
             <ul className="flex flex-col gap-2">{d.apps.slice(0, 5).map(a => (
               <li key={a.id}><button onClick={() => go("applications", { id: a.id })} className="w-full flex items-center justify-between gap-3 rounded-2xl bg-white/60 hover:bg-white/90 px-4 py-3 text-left">
                 <span><span className="font-bold">{a.name}</span><span className="text-muted text-sm"> for {a.dog_name || "any dog"}</span><br /><span className="text-xs text-muted">{fmtDate(a.created_at)}</span></span>
@@ -188,6 +188,13 @@ function Dashboard({ go, toast }) {
                 <Pill cls={MSG_STYLE[m.status]}>{m.status}</Pill></button></li>))}</ul>}
         </Card>
       </div>
+      {!DEMO && d.dogs.length === 0 && (
+        <Card className="mt-5 bg-sand/30">
+          <h2 className="font-extrabold text-lg mb-2 flex items-center gap-2"><Icon name="Dog" size={20} /> Your database has no dogs yet</h2>
+          <p className="text-muted mb-4">Add the {window.NB.SAMPLE_DOGS.length} dogs we shared from rescue posts on Facebook so the website isn't empty. You can edit or remove them anytime.</p>
+          <Button onClick={async () => { try { for (const x of window.NB.SAMPLE_DOGS) { const { id, created_at, ...row } = x; await API.insert("dogs", row); } toast("Starter dogs added"); load(); } catch (e) { toast(e.message); } }}><Icon name="Plus" size={16} /> Add starter dogs</Button>
+        </Card>
+      )}
       {DEMO && (
         <Card className="mt-5 bg-sand/30">
           <h2 className="font-extrabold text-lg mb-2 flex items-center gap-2"><Icon name="FlaskConical" size={20} /> You're in demo mode</h2>
@@ -199,10 +206,70 @@ function Dashboard({ go, toast }) {
   );
 }
 
+/* ---------- Facebook import: paste a rescue's post, get a draft listing ---------- */
+function parseFacebookPost(text, sourceName, sourceUrl) {
+  const t = String(text || "").replace(/\s+/g, " ").trim();
+  const pick = (re, i = 1) => { const m = t.match(re); return m ? m[i].trim() : ""; };
+  const STOP = /^(URGENT|FOSTER|NEEDED|ADOPT|PLEASE|HELP|SAVE|LAST|CALL|NEW|THE|THIS|MEET|DOG|DOGS|PUP|PUPS|SHE|HE|WE|OUR|ONE|TWO|SIX|BEING|HAIL|MARY|TODAY|ASAP|CURRENT|FINAL|NOTICE|SHORT|TERM)$/i;
+  const nameCands = [
+    pick(/foster needed for ([A-Z][A-Za-z]+)/i), pick(/save ([A-Z][a-z]+)/), pick(/meet ([A-Z][a-z]+)/i),
+    pick(/\b([A-Z][a-z]+) \(#/), pick(/\b([A-Z][a-z]+) (?:is|needs|was|has been) /),
+    ...[...t.matchAll(/\b([A-Z]{3,})\b/g)].map(m => m[1]),
+  ].filter(n => n && !STOP.test(n));
+  const name = nameCands[0] ? nameCands[0].charAt(0).toUpperCase() + nameCands[0].slice(1).toLowerCase() : "";
+  const age = pick(/((?:about |around |~)?\d+(?:\.\d+|½)?\s*(?:-|\s)?(?:years?|yrs?|months?|mos?|weeks?)(?:\s*old)?)/i);
+  const yrs = parseFloat((age.match(/[\d.]+/) || [])[0] || "0") + (age.includes("½") ? 0.5 : 0);
+  const isMonths = /month|mo|week/i.test(age);
+  const age_group = !age ? "Adult" : isMonths || yrs < 1 ? "Puppy" : yrs < 3 ? "Young" : yrs < 8 ? "Adult" : "Senior";
+  const weight = parseInt(pick(/(\d{1,3})\s*(?:-|\s)?(?:lb|lbs|pound)/i) || "0", 10);
+  const size = !weight ? "Medium" : weight < 25 ? "Small" : weight < 55 ? "Medium" : "Large";
+  const she = (t.match(/\b(she|her)\b/gi) || []).length, he = (t.match(/\b(he|him|his)\b/gi) || []).length;
+  const mixRaw = pick(/\b([A-Za-z]+(?:[\/&-]| & | and )?[A-Za-z]*(?: [A-Z][a-z]+)?) mix\b/i);
+  const cap = (x) => x.replace(/\b[a-z]/g, c => c.toUpperCase());
+  const breed = mixRaw && !/^(a|an|the|is|lb|lbs)$/i.test(mixRaw) ? cap(mixRaw) + " mix" : pick(/\b(Pit ?Bull|Shepherd|Husky|Labrador|Lab|Chihuahua|Beagle|Boxer|Rottweiler|French Bulldog|Frenchie|Doodle|Terrier|Hound|Akita|Great Pyrenees|Golden Retriever|Dachshund|Poodle|Mastiff|Corgi|Cattle Dog|Heeler)\b/i);
+  const shelter_id = pick(/(?:ID|#)\s*:?\s*([A-Z]{0,2}\d{4,})/);
+  const deadline = pick(/((?:being )?euthani[sz]\w*[^.!]{0,30}?\d{1,2}\/\d{1,2})/i) || pick(/(last call[^.!]{0,30})/i) || pick(/(deadline[^.!]{0,30})/i) || (/(?:this|by) (?:week|weekend|tomorrow|today)/i.test(t) ? pick(/((?:needed |needs? )?(?:this|by) (?:week|weekend|tomorrow|today))/i) : "") || (/euthanasia list/i.test(t) ? "On the euthanasia list" : "");
+  const location = pick(/\b(?:at|in|near)\s+((?:[A-Z][a-z]+\.? ?){1,3},\s*(?:[A-Z]{2}|[A-Z][a-z]+))\b/);
+  const fosterish = /foster/i.test(t), adoptish = /adopt/i.test(t);
+  const need = /short[- ]term foster/i.test(t) ? "Short-term foster" : fosterish && adoptish ? "Foster or adopter" : adoptish ? "Adopter" : "Foster";
+  const sentences = t.replace(/#\w+/g, "").replace(/\[?(?:phone|email|link)\]?/g, "").split(/(?<=[.!?])\s+/).filter(x => x.length > 20 && !/(text|call|dm|email|message) us|apply|link in (our )?bio|share (this|her|his)|#/i.test(x));
+  return {
+    name, breed: breed || "", age_label: age ? age.replace(/\s*old$/i, "") : "", age_group, weight, size, sex: she > he ? "Female" : he > she ? "Male" : "Unknown",
+    shelter_id, deadline, location, need, urgent: /urgent|euthan|last call|asap|deadline|running out/i.test(t),
+    kids: /(good|great) with (kids|children)/i.test(t), dogs: /(good|great|does well) with (other )?dogs|dog[- ]friendly/i.test(t), cats: /(good|great) with cats|cat[- ]friendly/i.test(t),
+    house_trained: /(potty|house)[- ]trained/i.test(t), status: "Available", published: false, featured: false,
+    source_name: sourceName || "", source_url: sourceUrl || "", posted_on: new Date().toISOString().slice(0, 10),
+    contact: sourceName ? `Message ${sourceName} on Facebook and mention ${name || "this dog"}${shelter_id ? ` (ID ${shelter_id})` : ""}.` : "",
+    bio: sentences.slice(0, 3).join(" "), traits: [], photos: [],
+  };
+}
+
+function FacebookImport({ onClose, onParsed }) {
+  const [text, setText] = useState(""); const [src, setSrc] = useState(""); const [url, setUrl] = useState("");
+  return (
+    <Modal open wide title="Import a dog from a Facebook post" onClose={onClose}
+      footer={<><Button variant="glass" onClick={onClose}>Cancel</Button><Button disabled={text.trim().length < 20} onClick={() => onParsed(parseFacebookPost(text, src.trim(), url.trim()))}><Icon name="WandSparkles" size={16} /> Fill in the listing</Button></>}>
+      <div className="flex flex-col gap-4">
+        <ol className="text-sm text-muted list-decimal pl-5 flex flex-col gap-1">
+          <li>On Facebook, open the rescue's post, click <strong>See more</strong>, and copy the whole text.</li>
+          <li>Paste it below with the rescue's name and a link to their page or post.</li>
+          <li>We fill in the listing for you as a <strong>hidden draft</strong>. Check the details, rewrite the story in your own words, add photos you have permission to use, then switch on "Visible on website".</li>
+        </ol>
+        <Field label="Post text"><textarea rows="8" value={text} onChange={e => setText(e.target.value)} className={inputCls} placeholder="Paste the Facebook post here…" /></Field>
+        <div className="grid md:grid-cols-2 gap-4">
+          <Field label="Rescue or shelter that posted it"><input value={src} onChange={e => setSrc(e.target.value)} className={inputCls} placeholder="e.g. Philozoia Animal Rescue" /></Field>
+          <Field label="Link to their post or page"><input value={url} onChange={e => setUrl(e.target.value)} className={inputCls} placeholder="https://www.facebook.com/…" /></Field>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 /* ---------- Dogs ---------- */
 const BLANK_DOG = { name: "", breed: "", age_label: "", age_group: "Adult", weight: 30, size: "Medium", sex: "Female", status: "Available", energy: "Medium",
   spay_neuter: true, vaccines: true, kids: false, dogs: false, cats: false, house_trained: false, featured: false, urgent: false, traits: [], bio: "", routine: "", ideal_home: "",
-  photos: [], coat: "#C98B52", ear: "#7A4E2D", adoption_fee: "", published: true, sort_order: 0 };
+  photos: [], coat: "#C98B52", ear: "#7A4E2D", adoption_fee: "", published: true, sort_order: 0,
+  need: "Foster", location: "", shelter_id: "", deadline: "", source_name: "", source_url: "", contact: "", posted_on: null };
 
 function DogEditor({ dog, all, onClose, onSaved, toast }) {
   const [f, setF] = useState({ ...BLANK_DOG, ...dog });
@@ -214,7 +281,7 @@ function DogEditor({ dog, all, onClose, onSaved, toast }) {
     if (!f.name.trim()) { toast("Please give the dog a name"); return; }
     setBusy(true);
     try {
-      const row = { ...f }; delete row.id; delete row.created_at; delete row.updated_at;
+      const row = { ...f }; delete row.id; delete row.created_at; delete row.updated_at; if (!row.posted_on) row.posted_on = null;
       if (!dog.id) {
         let slug = window.NB.slugify(f.name); const taken = new Set(all.map(x => x.slug));
         if (taken.has(slug)) { let n = 2; while (taken.has(`${slug}-${n}`)) n++; slug = `${slug}-${n}`; }
@@ -233,7 +300,7 @@ function DogEditor({ dog, all, onClose, onSaved, toast }) {
         <section className="grid md:grid-cols-3 gap-4">
           <Field label="Name">{inp("name")}</Field>
           <Field label="Breed / mix">{inp("breed")}</Field>
-          <Field label="Sex">{sel("sex", ["Female", "Male"])}</Field>
+          <Field label="Sex">{sel("sex", ["Female", "Male", "Female & male", "Unknown"])}</Field>
           <Field label="Age (shown on site)" hint="e.g. 2 years, 5 months">{inp("age_label")}</Field>
           <Field label="Age group">{sel("age_group", ["Puppy", "Young", "Adult", "Senior"])}</Field>
           <Field label="Weight (lbs)">{inp("weight", "number")}</Field>
@@ -241,6 +308,18 @@ function DogEditor({ dog, all, onClose, onSaved, toast }) {
           <Field label="Energy">{sel("energy", ["Low", "Medium", "High"])}</Field>
           <Field label="Status">{sel("status", ["Available", "Pending", "Adopted"])}</Field>
           <Field label="Adoption fee (optional)" hint="Leave blank to use your standard fees">{inp("adoption_fee")}</Field>
+        </section>
+        <section className="rounded-2xl bg-white/50 p-4 flex flex-col gap-4">
+          <h3 className="font-extrabold">Where they are & how to help</h3>
+          <div className="grid md:grid-cols-3 gap-4">
+            <Field label="They need">{sel("need", ["Foster", "Short-term foster", "Adopter", "Foster or adopter", "Adopter, foster or rescue", "Rescue pull", "Transport"])}</Field>
+            <Field label="City / State">{inp("location")}</Field>
+            <Field label="Deadline / urgency" hint="e.g. Euthanasia list 11/20">{inp("deadline")}</Field>
+            <Field label="Shelter ID">{inp("shelter_id")}</Field>
+            <Field label="Rescue / shelter caring for them">{inp("source_name")}</Field>
+            <Field label="Link to their post or page">{inp("source_url")}</Field>
+          </div>
+          <Field label="How to help (shown on the dog's page)"><textarea rows="2" value={f.contact || ""} onChange={e => set("contact", e.target.value)} className={inputCls} placeholder="e.g. Message Philozoia on Facebook and mention Cary (ID A854130)." /></Field>
         </section>
         <section className="grid sm:grid-cols-2 md:grid-cols-4 gap-x-4">
           <Switch checked={f.kids} onChange={v => set("kids", v)} label="Good with kids" />
@@ -274,7 +353,7 @@ function DogEditor({ dog, all, onClose, onSaved, toast }) {
 
 function DogsAdmin({ toast, confirm, params }) {
   const [rows, setRows] = useState(null); const [q, setQ] = useState(""); const [tab, setTab] = useState("All");
-  const [edit, setEdit] = useState(params && params.add ? {} : null);
+  const [edit, setEdit] = useState(params && params.add ? {} : null); const [importing, setImporting] = useState(!!(params && params.import));
   const load = async () => { try { setRows(await API.list("dogs")); } catch (e) { toast(e.message); setRows([]); } };
   useEffect(() => { load(); }, []);
   const quick = async (d, patch, msg) => { try { await API.update("dogs", d.id, patch); toast(msg); load(); } catch (e) { toast(e.message); } };
@@ -292,7 +371,7 @@ function DogsAdmin({ toast, confirm, params }) {
   const view = rows.filter(r => (tab === "All" || (tab === "Hidden" ? !r.published : r.status === tab)) && (!q || `${r.name} ${r.breed}`.toLowerCase().includes(q.toLowerCase())));
   return (
     <div className="fade-in">
-      <PageHead title="Dogs" subtitle="Add, edit and organise every dog on the website." actions={<Button onClick={() => setEdit({})}><Icon name="Plus" size={18} /> Add a dog</Button>} />
+      <PageHead title="Dogs" subtitle="Add, edit and organise every dog on the website." actions={<><Button variant="glass" onClick={() => setImporting(true)}><Icon name="Facebook" size={18} /> Import from Facebook</Button><Button onClick={() => setEdit({})}><Icon name="Plus" size={18} /> Add a dog</Button></>} />
       <Card className="mb-5 flex flex-col md:flex-row gap-3 md:items-center">
         <div className="flex flex-wrap gap-2">{Object.keys(counts).map(t => <button key={t} onClick={() => setTab(t)} aria-pressed={tab === t} className={`rounded-full px-4 py-2 text-sm font-semibold min-h-[40px] ${tab === t ? "bg-ink text-white" : "bg-white/60 text-muted hover:text-ink"}`}>{t} <span className="opacity-70">{counts[t]}</span></button>)}</div>
         <label className="relative md:ml-auto md:w-72"><span className="sr-only">Search dogs</span><Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search name or breed" className={inputCls + " pl-9 py-2"} /></label>
@@ -321,7 +400,7 @@ function DogsAdmin({ toast, confirm, params }) {
                 <button onClick={() => quick(d, { featured: !d.featured }, d.featured ? "Removed from homepage" : "Featured on homepage")} title="Feature on homepage" aria-label="Toggle featured" className={`w-10 h-10 rounded-full flex items-center justify-center ${d.featured ? "bg-sand" : "hover:bg-white/70"}`}><Icon name="Star" size={18} /></button>
                 <button onClick={() => quick(d, { published: !d.published }, d.published ? "Hidden from website" : "Visible on website")} title={d.published ? "Hide from website" : "Show on website"} aria-label="Toggle visible" className="w-10 h-10 rounded-full hover:bg-white/70 flex items-center justify-center"><Icon name={d.published ? "Eye" : "EyeOff"} size={18} /></button>
                 <button onClick={() => dup(d)} title="Duplicate" aria-label="Duplicate" className="w-10 h-10 rounded-full hover:bg-white/70 flex items-center justify-center"><Icon name="Copy" size={18} /></button>
-                <a href={`index.html#dog-${d.slug}`} target="_blank" rel="noopener" title="View on website" aria-label="View on website" className="w-10 h-10 rounded-full hover:bg-white/70 flex items-center justify-center"><Icon name="ExternalLink" size={18} /></a>
+                <a href={`dogs/${d.slug}/`} target="_blank" rel="noopener" title="View on website" aria-label="View on website" className="w-10 h-10 rounded-full hover:bg-white/70 flex items-center justify-center"><Icon name="ExternalLink" size={18} /></a>
                 <button onClick={() => del(d)} title="Delete" aria-label="Delete" className="w-10 h-10 rounded-full hover:bg-[#F6DCD5] text-[#B8432C] flex items-center justify-center"><Icon name="Trash2" size={18} /></button>
                 <Button variant="dark" onClick={() => setEdit(d)} className="py-2"><Icon name="Pencil" size={16} /> Edit</Button>
               </div>
@@ -330,12 +409,13 @@ function DogsAdmin({ toast, confirm, params }) {
         </div>
       )}
       {edit && <DogEditor dog={edit} all={rows} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); }} toast={toast} />}
+      {importing && <FacebookImport onClose={() => setImporting(false)} onParsed={(d) => { setImporting(false); setEdit(d); toast("Draft filled in — check the details, then save"); }} />}
     </div>
   );
 }
 
 /* ---------- Applications ---------- */
-const APP_LABELS = { cityState: "City / State", housing: "Own or rent", landlordName: "Landlord name", landlordPhone: "Landlord phone", yard: "Yard & fence", adults: "Adults in home", kids: "Children", pets: "Current pets", vet: "Vet reference", hoursAlone: "Hours alone", exercise: "Exercise plan", experience: "Experience", waiverAgreed: "Agreed to contract & waiver" };
+const APP_LABELS = { helpTypes: "Can help with", rescue: "Rescue caring for the dog", rescueLink: "Rescue link", availability: "Availability", message: "Message", consentToShare: "OK to share with rescue", cityState: "City / State", housing: "Own or rent", landlordName: "Landlord name", landlordPhone: "Landlord phone", yard: "Yard & fence", adults: "Adults in home", kids: "Children", pets: "Current pets", vet: "Vet reference", hoursAlone: "Hours alone", exercise: "Exercise plan", experience: "Experience", waiverAgreed: "Agreed to contract & waiver" };
 
 function toCSV(rows) {
   const keys = ["created_at", "status", "dog_name", "name", "email", "phone", ...Object.keys(APP_LABELS), "notes"];
@@ -360,7 +440,7 @@ function ApplicationsAdmin({ toast, confirm, params }) {
   };
   return (
     <div className="fade-in">
-      <PageHead title="Applications" subtitle="Review adoption applications and track each one." actions={<Button variant="glass" onClick={exportCSV} disabled={!view.length}><Icon name="Download" size={16} /> Export CSV</Button>} />
+      <PageHead title="Offers to help" subtitle="People offering to foster, adopt or help. Pass each one to the rescue, then track it here." actions={<Button variant="glass" onClick={exportCSV} disabled={!view.length}><Icon name="Download" size={16} /> Export CSV</Button>} />
       <Card className="mb-5 flex flex-col md:flex-row gap-3 md:items-center">
         <div className="flex flex-wrap gap-2">{["All", ...APP_STATUSES].map(t => <button key={t} onClick={() => setTab(t)} aria-pressed={tab === t} className={`rounded-full px-4 py-2 text-sm font-semibold min-h-[40px] ${tab === t ? "bg-ink text-white" : "bg-white/60 text-muted hover:text-ink"}`}>{t} <span className="opacity-70">{t === "All" ? rows.length : rows.filter(r => r.status === t).length}</span></button>)}</div>
         <label className="relative md:ml-auto md:w-72"><span className="sr-only">Search applications</span><Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search name, email or dog" className={inputCls + " pl-9 py-2"} /></label>
@@ -642,7 +722,7 @@ function Login({ onIn, settings }) {
             <button type="button" onClick={reset} className="text-sm font-semibold text-muted hover:text-ink">Forgot password?</button>
           </form>
         )}
-        <a href="index.html" className="block text-center text-sm font-semibold text-muted hover:text-ink mt-6">← Back to website</a>
+        <a href="./" className="block text-center text-sm font-semibold text-muted hover:text-ink mt-6">← Back to website</a>
       </div>
     </div>
   );
@@ -698,7 +778,7 @@ function AdminApp() {
             ))}
             <div className="mt-auto pt-4 border-t border-white/70 flex flex-col gap-1">
               {DEMO && <span className="mx-2 mb-2 rounded-full bg-sand/60 px-3 py-1 text-xs font-bold text-center">Demo mode</span>}
-              <a href="index.html" target="_blank" rel="noopener" className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-muted hover:bg-white/70"><Icon name="Globe" size={18} /> View website</a>
+              <a href="./" target="_blank" rel="noopener" className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-muted hover:bg-white/70"><Icon name="Globe" size={18} /> View website</a>
               <span className="px-4 text-xs text-muted truncate">{user.email}</span>
               <button onClick={signOut} className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-muted hover:bg-white/70 text-left"><Icon name="LogOut" size={18} /> Sign out</button>
             </div>

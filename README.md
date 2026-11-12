@@ -1,11 +1,11 @@
 # New Beginnings Animal Rescue — website & admin
 
-A fast, mobile-friendly rescue website with a full staff admin.
+We connect dogs who need a foster or home with people who can help. Dogs are shared from rescues and shelters (credited and linked back), and every "I can help" offer is passed to the rescue caring for that dog.
 
-- **Website:** `index.html` (home, adoptable dogs with filters, dog profiles, adoption process, application form, support & supplies, about & contact)
+- **Website:** home, dogs needing help (filters + search by city/state), a page per dog, how it works + FAQ, "I can help" form, list-a-dog form for rescues, support, about & contact
 - **Admin:** `admin.html` (dashboard, dogs with photo uploads, applications, messages, happy tails, site settings, team)
 - **Database & logins:** [Supabase](https://supabase.com) (free plan is plenty)
-- **Hosting:** GitHub Pages (free)
+- **Hosting:** GitHub Pages via GitHub Actions (free). `.github/workflows/deploy.yml` runs `scripts/build-seo.mjs` on every push and every hour, so new dogs added in the admin get their own search-friendly page and sitemap entry automatically.
 
 Until Supabase is connected, the site runs in **demo mode**: sample dogs, and the admin saves changes only in your own browser. Nothing breaks, so you can try everything first.
 
@@ -46,14 +46,28 @@ To add more staff later: create them under **Authentication → Users**, then ad
 - **Site Settings:** rescue name, logo, homepage text, announcement banner, fees, payment handles (Venmo/PayPal/Zelle/Cash App…), wishlists, urgent supply needs, sponsorship amounts, story and social links.
 - **Team:** add or remove staff.
 
+## Adding dogs from Facebook
+
+In the admin, **Dogs → Import from Facebook**: paste the rescue's post text, their name and a link. The listing is filled in for you as a hidden draft. Check the details, rewrite the story in your own words, only add photos you have permission to use, then switch on "Visible on website". Always credit the rescue and link back to them.
+
+## SEO checklist
+
+Already built in: a real HTML page per dog and section with unique titles and descriptions, canonical URLs, Open Graph/Twitter cards, structured data (Organization, WebSite, CollectionPage, BreadcrumbList, FAQPage), `sitemap.xml`, fast-loading fallback content for crawlers, and `noindex` on the admin.
+
+To do once:
+1. Add the site to **Google Search Console** (URL-prefix property: your site URL) and submit `sitemap.xml`. Do the same in **Bing Webmaster Tools**.
+2. **Get a custom domain** (e.g. newbeginningsrescue.org) and set it in repo Settings → Pages, then update `siteUrl` in Site Settings. A real domain ranks better and lets `robots.txt` work (GitHub only reads it at a domain's root).
+3. Create a **Google Business Profile** if you have a service area, and link the site from your Facebook/Instagram bios.
+
 ## Before you launch, replace the sample content
 
-In **Site Settings**: your real email, location, payment handles, wishlist links and fees, then turn off (or rewrite) the "Preview site" banner. In **Dogs** and **Happy Tails**: delete the sample dogs and stories and add your own.
+In **Site Settings**: your real email, payment handles and wishlist links. In **Dogs**: the starter dogs were shared from public Facebook posts on Nov 12, 2026 — check each with its rescue and mark them Safe or remove them as their situations change.
 
 ## Files
 
 ```
-index.html          public website
+scripts/template.html   page template (title, meta, structured data)
+scripts/build-seo.mjs   builds every page + sitemap into _site/
 admin.html          staff admin
 js/config.js        your Supabase connection (edit this)
 js/data.js          data layer (Supabase or demo mode) + default settings
