@@ -1,0 +1,11 @@
+html { scroll-behavior: smooth; }
+body { margin: 0; background: #FAF8F5; color: #2B2927; font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif; }
+.glass { background: rgba(255,255,255,0.6); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 8px 32px rgba(43,41,39,0.06), inset 0 1px 0 rgba(255,255,255,0.7); }
+.glass-strong { background: rgba(250,248,245,0.82); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.65); box-shadow: 0 8px 32px rgba(43,41,39,0.08), inset 0 1px 0 rgba(255,255,255,0.8); }
+.fade-in { animation: fadeIn .35s ease both; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.float { animation: float 6s ease-in-out infinite; }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible { outline: 2px solid #E07A5F; outline-offset: 2px; }
+.boot { display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center; min-height: 100vh; color: #5C5854; font-family: system-ui, sans-serif; }
+.boot img { border-radius: 9999px; object-fit: cover; }
