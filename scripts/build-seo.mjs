@@ -96,10 +96,10 @@ const pages = [
     path: `dogs/${d.slug}/`,
     title: `${d.name}${d.need ? ` Needs a ${d.need.split(",")[0]}` : ""}${d.location ? ` in ${d.location}` : ""} | ${NAME}`,
     desc: dogSummary(d).slice(0, 300),
-    image: (d.photos || [])[0], imageAlt: (d.photos || [])[0] ? `${d.name}, ${d.breed}` : "",
+    image: (d.photos || [])[0] ? abs(d.photos[0]) : undefined, imageAlt: (d.photos || [])[0] ? `${d.name}, ${d.breed}` : "",
     ld: { "@context": "https://schema.org", "@type": "WebPage", name: `${d.name} — ${d.breed}`, url: abs(`dogs/${d.slug}/`), description: dogSummary(d),
       breadcrumb: crumbs([["Home", ""], ["Dogs needing help", "dogs/"], [d.name, `dogs/${d.slug}/`]]),
-      ...(d.posted_on ? { datePublished: d.posted_on } : {}), ...((d.photos || [])[0] ? { primaryImageOfPage: (d.photos || [])[0] } : {}) },
+      ...(d.posted_on ? { datePublished: d.posted_on } : {}), ...((d.photos || [])[0] ? { primaryImageOfPage: { "@type": "ImageObject", url: abs(d.photos[0]) } } : {}) },
     body: `<nav aria-label="Breadcrumb"><a href="./">Home</a> › <a href="dogs/">Dogs needing help</a> › ${esc(d.name)}</nav>
 <h1>${esc(d.name)}</h1><p>${esc(d.breed)} · ${esc(d.sex)}${d.age_label ? ` · ${esc(d.age_label)}` : ""}${d.location ? ` · ${esc(d.location)}` : ""}</p>
 <p><strong>Needs:</strong> ${esc(d.need || "Foster")}${d.deadline ? ` — ${esc(d.deadline)}` : ""}</p>
